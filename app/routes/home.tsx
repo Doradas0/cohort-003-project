@@ -7,10 +7,12 @@ import { buildCourseQuery, getLessonCountForCourse } from "~/services/courseServ
 import { getAllCategories } from "~/services/categoryService";
 import { CourseStatus } from "~/db/schema";
 import { BookOpen, GraduationCap, Users, ArrowRight, User, Moon, Sun } from "lucide-react";
+import { StarRating } from "~/components/star-rating";
 import { CourseImage } from "~/components/course-image";
 import { DevUI } from "~/components/dev-ui";
 import { getAllUsers, getUserById } from "~/services/userService";
 import { getCurrentUserId, getDevCountry } from "~/lib/session";
+import { getAverageRatingsForCourses } from "~/services/reviewService";
 import { getCountryTierInfo, COUNTRIES } from "~/lib/ppp";
 
 export function meta({}: Route.MetaArgs) {
@@ -22,10 +24,18 @@ export function meta({}: Route.MetaArgs) {
 
 export async function loader({ request }: Route.LoaderArgs) {
   const courses = buildCourseQuery(null, null, CourseStatus.Published, "newest", 50, 0);
-  const featured = courses.slice(0, 3).map((course) => ({
-    ...course,
-    lessonCount: getLessonCountForCourse(course.id),
-  }));
+  const featuredCourses = courses.slice(0, 3);
+  const featuredIds = featuredCourses.map((c) => c.id);
+  const ratingsMap = getAverageRatingsForCourses(featuredIds);
+  const featured = featuredCourses.map((course) => {
+    const ratingData = ratingsMap.get(course.id);
+    return {
+      ...course,
+      lessonCount: getLessonCountForCourse(course.id),
+      averageRating: ratingData?.average ?? null,
+      ratingCount: ratingData?.count ?? 0,
+    };
+  });
   const categories = getAllCategories();
   const users = getAllUsers();
   const currentUserId = await getCurrentUserId(request);
@@ -186,6 +196,13 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                     <p className="line-clamp-2 text-sm text-muted-foreground">
                       {course.description}
                     </p>
+                  </CardContent>
+                  <CardContent className="pt-0">
+                    <StarRating
+                      rating={course.averageRating}
+                      count={course.ratingCount}
+                      size="sm"
+                    />
                   </CardContent>
                   <CardFooter className="flex items-center justify-between text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">

@@ -7,8 +7,10 @@ import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card"
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { AlertTriangle, BookOpen, CheckCircle2, GraduationCap, PlayCircle } from "lucide-react";
+import { StarRating } from "~/components/star-rating";
 import { CourseImage } from "~/components/course-image";
 import { data, isRouteErrorResponse } from "react-router";
+import { getAverageRatingsForCourses } from "~/services/reviewService";
 
 export function meta() {
   return [
@@ -56,8 +58,20 @@ export async function loader({ request }: Route.LoaderArgs) {
     };
   });
 
-  const completedCourses = coursesWithProgress.filter((c) => c.isCompleted);
-  const inProgressCourses = coursesWithProgress.filter((c) => !c.isCompleted);
+  const courseIds = coursesWithProgress.map((c) => c.courseId);
+  const ratingsMap = getAverageRatingsForCourses(courseIds);
+
+  const coursesWithRatings = coursesWithProgress.map((course) => {
+    const ratingData = ratingsMap.get(course.courseId);
+    return {
+      ...course,
+      averageRating: ratingData?.average ?? null,
+      ratingCount: ratingData?.count ?? 0,
+    };
+  });
+
+  const completedCourses = coursesWithRatings.filter((c) => c.isCompleted);
+  const inProgressCourses = coursesWithRatings.filter((c) => !c.isCompleted);
 
   return { inProgressCourses, completedCourses };
 }
@@ -160,6 +174,13 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                       <p className="line-clamp-2 text-sm text-muted-foreground">
                         {course.courseDescription}
                       </p>
+                      <div className="mt-2">
+                        <StarRating
+                          rating={course.averageRating}
+                          count={course.ratingCount}
+                          size="sm"
+                        />
+                      </div>
                     </CardHeader>
                     <CardContent className="flex-1">
                       <div className="mb-2 flex items-center justify-between text-sm">
@@ -232,6 +253,13 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                       <p className="line-clamp-2 text-sm text-muted-foreground">
                         {course.courseDescription}
                       </p>
+                      <div className="mt-2">
+                        <StarRating
+                          rating={course.averageRating}
+                          count={course.ratingCount}
+                          size="sm"
+                        />
+                      </div>
                     </CardHeader>
                     <CardContent className="flex-1">
                       <div className="flex items-center gap-2 text-sm text-green-600">
