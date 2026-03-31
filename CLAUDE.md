@@ -3,19 +3,31 @@ Use object parameters to make it clear what each parameter represents.
 
 ```Typescript
 // Bad
-function createUser(name: string, age: number, email: string) {
+function isLessonBookmarked(currentUserId: string, lessonId: string) {
   // ...
 }
 
 // Good
-interface CreateUserParams {
-  name: string;
-  age: number;
-  email: string;
-}   
-
-function createUser(params: CreateUserParams) {
-  const { name, age, email } = params;
+function isLessonBookmarked(opts: {currentUserId: string, lessonId: string}) {
+  const {currentUserId, lessonId} = opts;
   // ...
+}
+```
+
+Anything marked as a `service` should have tests written in an acoompanying `.test.ts` file.
+
+Do not use `any` in TypeScript. Instead use the most precise type possible while ensuring accuracy. If in doubt use `unknown` and then narrow the type as much as possible before using it.
+
+```Typescript
+// Bad
+function getUser(id: string) {
+  const user: any = database.findUserById(id);
+  return user;
+}
+
+// Good
+function getUser(id: string) {
+  const user: unknown = database.findUserById(id);
+  return validateUserResponse(user);
 }
 ```
